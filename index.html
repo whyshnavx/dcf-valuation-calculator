@@ -1,256 +1,479 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DCF Valuation Calculator</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            margin: 0;
-            padding: 40px 20px;
-            color: #1f2937;
-        }
+<title>DCF Valuation Calculator</title>
 
-        .container {
-            max-width: 900px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
+<style>
 
-        h1 {
-            margin-bottom: 5px;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        .subtitle {
-            color: #6b7280;
-            margin-bottom: 30px;
-        }
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 40px 20px;
+    color: #172033;
+}
 
-        .inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
-        }
+.container {
+    max-width: 1100px;
+    margin: auto;
+}
 
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
+.header {
+    background: #172033;
+    color: white;
+    padding: 35px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
 
-        input {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 15px;
-        }
+.header h1 {
+    margin: 0 0 8px;
+    font-size: 32px;
+}
 
-        button {
-            margin-top: 25px;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            background: #111827;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
+.header p {
+    margin: 0;
+    color: #cbd5e1;
+}
 
-        button:hover {
-            background: #374151;
-        }
+.section {
+    background: white;
+    padding: 28px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.06);
+}
 
-        .results {
-            margin-top: 30px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
+.section h2 {
+    margin-top: 0;
+    font-size: 21px;
+}
 
-        .card {
-            background: #f9fafb;
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
-        }
+.inputs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
 
-        .card-title {
-            color: #6b7280;
-            font-size: 14px;
-        }
+.input-group label {
+    display: block;
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 7px;
+}
 
-        .value {
-            font-size: 24px;
-            font-weight: bold;
-            margin-top: 8px;
-        }
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 15px;
+}
 
-        table {
-            width: 100%;
-            margin-top: 30px;
-            border-collapse: collapse;
-        }
+.calculate {
+    margin-top: 25px;
+    padding: 13px 28px;
+    border: none;
+    border-radius: 8px;
+    background: #172033;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
 
-        th, td {
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
-            text-align: right;
-        }
+.calculate:hover {
+    background: #29364f;
+}
 
-        th:first-child,
-        td:first-child {
-            text-align: left;
-        }
+.results {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
 
-        @media (max-width: 700px) {
-            .inputs,
-            .results {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+.result-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.result-card .label {
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.result-card .value {
+    font-size: 25px;
+    font-weight: bold;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th {
+    background: #172033;
+    color: white;
+    padding: 12px;
+    text-align: right;
+}
+
+th:first-child {
+    text-align: left;
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: right;
+}
+
+td:first-child {
+    text-align: left;
+    font-weight: bold;
+}
+
+.sensitivity {
+    overflow-x: auto;
+}
+
+.sensitivity table {
+    min-width: 650px;
+}
+
+.sensitivity td,
+.sensitivity th {
+    text-align: center;
+}
+
+.sensitivity td {
+    font-weight: bold;
+}
+
+.note {
+    color: #64748b;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+@media (max-width: 700px) {
+
+    .inputs,
+    .results {
+        grid-template-columns: 1fr;
+    }
+
+    body {
+        padding: 20px 10px;
+    }
+
+    .section,
+    .header {
+        padding: 20px;
+    }
+
+}
+
+</style>
 </head>
 
 <body>
 
 <div class="container">
 
-    <h1>DCF Valuation Calculator</h1>
+    <div class="header">
 
-    <p class="subtitle">
-        Estimate a company's intrinsic value using the Discounted Cash Flow method.
-    </p>
+        <h1>DCF Valuation Calculator</h1>
 
-    <div class="inputs">
+        <p>
+            A five-year Discounted Cash Flow model for estimating
+            enterprise value, equity value and implied share price.
+        </p>
 
-        <div>
-            <label>Current Revenue ($m)</label>
-            <input id="revenue" type="number" value="1000">
+    </div>
+
+
+    <!-- INPUTS -->
+
+    <div class="section">
+
+        <h2>Model Assumptions</h2>
+
+        <div class="inputs">
+
+            <div class="input-group">
+                <label>Current Revenue ($m)</label>
+                <input id="revenue" type="number" value="1000">
+            </div>
+
+            <div class="input-group">
+                <label>Revenue Growth (%)</label>
+                <input id="growth" type="number" value="10">
+            </div>
+
+            <div class="input-group">
+                <label>EBITDA Margin (%)</label>
+                <input id="margin" type="number" value="20">
+            </div>
+
+            <div class="input-group">
+                <label>Tax Rate (%)</label>
+                <input id="tax" type="number" value="25">
+            </div>
+
+            <div class="input-group">
+                <label>CapEx (% Revenue)</label>
+                <input id="capex" type="number" value="5">
+            </div>
+
+            <div class="input-group">
+                <label>Change in NWC (% Revenue)</label>
+                <input id="nwc" type="number" value="2">
+            </div>
+
+            <div class="input-group">
+                <label>WACC (%)</label>
+                <input id="wacc" type="number" value="10">
+            </div>
+
+            <div class="input-group">
+                <label>Terminal Growth (%)</label>
+                <input id="terminalGrowth" type="number" value="3">
+            </div>
+
+            <div class="input-group">
+                <label>Cash ($m)</label>
+                <input id="cash" type="number" value="100">
+            </div>
+
+            <div class="input-group">
+                <label>Debt ($m)</label>
+                <input id="debt" type="number" value="300">
+            </div>
+
+            <div class="input-group">
+                <label>Shares Outstanding (m)</label>
+                <input id="shares" type="number" value="100">
+            </div>
+
         </div>
 
-        <div>
-            <label>Revenue Growth (%)</label>
-            <input id="growth" type="number" value="10">
-        </div>
+        <button class="calculate" onclick="calculateDCF()">
+            Calculate Valuation
+        </button>
 
-        <div>
-            <label>EBITDA Margin (%)</label>
-            <input id="margin" type="number" value="20">
-        </div>
+        <p class="note">
+            All financial figures are entered in millions ($m), except per-share value.
+        </p>
 
-        <div>
-            <label>Tax Rate (%)</label>
-            <input id="tax" type="number" value="25">
-        </div>
+    </div>
 
-        <div>
-            <label>CapEx (% Revenue)</label>
-            <input id="capex" type="number" value="5">
-        </div>
 
-        <div>
-            <label>Change in NWC (% Revenue)</label>
-            <input id="nwc" type="number" value="2">
-        </div>
+    <!-- VALUATION SUMMARY -->
 
-        <div>
-            <label>WACC (%)</label>
-            <input id="wacc" type="number" value="10">
-        </div>
+    <div class="section">
 
-        <div>
-            <label>Terminal Growth (%)</label>
-            <input id="terminalGrowth" type="number" value="3">
-        </div>
+        <h2>Valuation Summary</h2>
 
-        <div>
-            <label>Cash ($m)</label>
-            <input id="cash" type="number" value="100">
-        </div>
+        <div class="results">
 
-        <div>
-            <label>Debt ($m)</label>
-            <input id="debt" type="number" value="300">
-        </div>
+            <div class="result-card">
+                <div class="label">Enterprise Value</div>
+                <div class="value" id="enterpriseValue">—</div>
+            </div>
 
-        <div>
-            <label>Shares Outstanding (m)</label>
-            <input id="shares" type="number" value="100">
+            <div class="result-card">
+                <div class="label">Equity Value</div>
+                <div class="value" id="equityValue">—</div>
+            </div>
+
+            <div class="result-card">
+                <div class="label">Implied Share Price</div>
+                <div class="value" id="sharePrice">—</div>
+            </div>
+
+            <div class="result-card">
+                <div class="label">PV of Forecast FCF</div>
+                <div class="value" id="pvFCF">—</div>
+            </div>
+
+            <div class="result-card">
+                <div class="label">Terminal Value</div>
+                <div class="value" id="terminalValue">—</div>
+            </div>
+
+            <div class="result-card">
+                <div class="label">PV of Terminal Value</div>
+                <div class="value" id="pvTerminal">—</div>
+            </div>
+
         </div>
 
     </div>
 
-    <button onclick="calculateDCF()">Calculate DCF</button>
 
-    <div class="results">
+    <!-- FORECAST -->
 
-        <div class="card">
-            <div class="card-title">Enterprise Value</div>
-            <div class="value" id="enterpriseValue">—</div>
-        </div>
+    <div class="section">
 
-        <div class="card">
-            <div class="card-title">Equity Value</div>
-            <div class="value" id="equityValue">—</div>
-        </div>
+        <h2>Five-Year Free Cash Flow Forecast</h2>
 
-        <div class="card">
-            <div class="card-title">Implied Share Price</div>
-            <div class="value" id="sharePrice">—</div>
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Year</th>
+                    <th>Revenue</th>
+                    <th>EBITDA</th>
+                    <th>EBIT</th>
+                    <th>NOPAT</th>
+                    <th>CapEx</th>
+                    <th>Change NWC</th>
+                    <th>FCF</th>
+                    <th>PV of FCF</th>
+                </tr>
+
+            </thead>
+
+            <tbody id="forecast"></tbody>
+
+        </table>
+
+    </div>
+
+
+    <!-- SENSITIVITY -->
+
+    <div class="section">
+
+        <h2>DCF Sensitivity Analysis</h2>
+
+        <p class="note">
+            Implied share price under different WACC and terminal growth assumptions.
+        </p>
+
+        <div class="sensitivity">
+
+            <table>
+
+                <thead id="sensitivityHeader"></thead>
+
+                <tbody id="sensitivityBody"></tbody>
+
+            </table>
+
         </div>
 
     </div>
 
-    <table>
 
-        <thead>
-            <tr>
-                <th>Year</th>
-                <th>Revenue</th>
-                <th>EBITDA</th>
-                <th>Free Cash Flow</th>
-                <th>PV of FCF</th>
-            </tr>
-        </thead>
+    <!-- METHODOLOGY -->
 
-        <tbody id="forecast"></tbody>
+    <div class="section">
 
-    </table>
+        <h2>DCF Methodology</h2>
+
+        <p>
+            The model forecasts five years of Free Cash Flow and discounts
+            those cash flows using the Weighted Average Cost of Capital (WACC).
+        </p>
+
+        <p>
+            Terminal Value is calculated using the Gordon Growth Method.
+            Enterprise Value is then adjusted for cash and debt to determine
+            Equity Value.
+        </p>
+
+        <p>
+            <strong>FCF = EBIT × (1 − Tax Rate) − CapEx − Change in NWC</strong>
+        </p>
+
+        <p>
+            <strong>
+                Terminal Value = FCF₍ₙ₊₁₎ ÷ (WACC − Terminal Growth)
+            </strong>
+        </p>
+
+    </div>
 
 </div>
 
 
 <script>
 
+function getNumber(id) {
+
+    return Number(document.getElementById(id).value);
+
+}
+
+
 function calculateDCF() {
 
-    let revenue = Number(document.getElementById("revenue").value);
-    let growth = Number(document.getElementById("growth").value) / 100;
-    let margin = Number(document.getElementById("margin").value) / 100;
-    let tax = Number(document.getElementById("tax").value) / 100;
-    let capexRate = Number(document.getElementById("capex").value) / 100;
-    let nwcRate = Number(document.getElementById("nwc").value) / 100;
-    let wacc = Number(document.getElementById("wacc").value) / 100;
-    let terminalGrowth = Number(document.getElementById("terminalGrowth").value) / 100;
-    let cash = Number(document.getElementById("cash").value);
-    let debt = Number(document.getElementById("debt").value);
-    let shares = Number(document.getElementById("shares").value);
+    let startingRevenue = getNumber("revenue");
+
+    let growth = getNumber("growth") / 100;
+
+    let margin = getNumber("margin") / 100;
+
+    let tax = getNumber("tax") / 100;
+
+    let capexRate = getNumber("capex") / 100;
+
+    let nwcRate = getNumber("nwc") / 100;
+
+    let wacc = getNumber("wacc") / 100;
+
+    let terminalGrowth = getNumber("terminalGrowth") / 100;
+
+    let cash = getNumber("cash");
+
+    let debt = getNumber("debt");
+
+    let shares = getNumber("shares");
+
 
     if (wacc <= terminalGrowth) {
+
         alert("WACC must be greater than Terminal Growth.");
+
         return;
+
     }
 
+
+    if (shares <= 0) {
+
+        alert("Shares outstanding must be greater than zero.");
+
+        return;
+
+    }
+
+
+    let revenue = startingRevenue;
+
     let totalPV = 0;
+
     let forecastHTML = "";
+
+    let yearlyData = [];
+
+
+    /* FIVE YEAR FORECAST */
 
     for (let year = 1; year <= 5; year++) {
 
@@ -274,36 +497,109 @@ function calculateDCF() {
 
         totalPV += PV_FCF;
 
+
+        yearlyData.push({
+
+            revenue,
+            EBITDA,
+            EBIT,
+            NOPAT,
+            CapEx,
+            ChangeNWC,
+            FCF
+
+        });
+
+
         forecastHTML += `
-            <tr>
-                <td>${year}</td>
-                <td>$${revenue.toFixed(1)}m</td>
-                <td>$${EBITDA.toFixed(1)}m</td>
-                <td>$${FCF.toFixed(1)}m</td>
-                <td>$${PV_FCF.toFixed(1)}m</td>
-            </tr>
+
+        <tr>
+
+            <td>Year ${year}</td>
+
+            <td>$${revenue.toFixed(1)}m</td>
+
+            <td>$${EBITDA.toFixed(1)}m</td>
+
+            <td>$${EBIT.toFixed(1)}m</td>
+
+            <td>$${NOPAT.toFixed(1)}m</td>
+
+            <td>$${CapEx.toFixed(1)}m</td>
+
+            <td>$${ChangeNWC.toFixed(1)}m</td>
+
+            <td>$${FCF.toFixed(1)}m</td>
+
+            <td>$${PV_FCF.toFixed(1)}m</td>
+
+        </tr>
+
         `;
+
     }
 
+
+    document.getElementById("forecast").innerHTML = forecastHTML;
+
+
+    /* TERMINAL VALUE */
+
+    let finalRevenue = revenue;
+
+    let terminalRevenue =
+        finalRevenue * (1 + terminalGrowth);
+
+    let terminalEBITDA =
+        terminalRevenue * margin;
+
+    let terminalEBIT =
+        terminalEBITDA;
+
+    let terminalNOPAT =
+        terminalEBIT * (1 - tax);
+
+    let terminalCapEx =
+        terminalRevenue * capexRate;
+
+    let terminalNWC =
+        terminalRevenue * nwcRate;
+
     let terminalFCF =
-        revenue * (1 + terminalGrowth) * margin * (1 - tax)
-        - revenue * (1 + terminalGrowth) * capexRate
-        - revenue * (1 + terminalGrowth) * nwcRate;
+        terminalNOPAT -
+        terminalCapEx -
+        terminalNWC;
+
 
     let terminalValue =
-        terminalFCF / (wacc - terminalGrowth);
+        terminalFCF /
+        (wacc - terminalGrowth);
 
-    let PV_TerminalValue =
-        terminalValue / Math.pow(1 + wacc, 5);
+
+    let pvTerminal =
+        terminalValue /
+        Math.pow(1 + wacc, 5);
+
+
+    /* ENTERPRISE VALUE */
 
     let enterpriseValue =
-        totalPV + PV_TerminalValue;
+        totalPV + pvTerminal;
+
+
+    /* EQUITY VALUE */
 
     let equityValue =
         enterpriseValue + cash - debt;
 
-    let impliedSharePrice =
+
+    /* SHARE PRICE */
+
+    let sharePrice =
         equityValue / shares;
+
+
+    /* DISPLAY RESULTS */
 
     document.getElementById("enterpriseValue").innerText =
         "$" + enterpriseValue.toFixed(1) + "m";
@@ -312,11 +608,223 @@ function calculateDCF() {
         "$" + equityValue.toFixed(1) + "m";
 
     document.getElementById("sharePrice").innerText =
-        "$" + impliedSharePrice.toFixed(2);
+        "$" + sharePrice.toFixed(2);
 
-    document.getElementById("forecast").innerHTML =
-        forecastHTML;
+    document.getElementById("pvFCF").innerText =
+        "$" + totalPV.toFixed(1) + "m";
+
+    document.getElementById("terminalValue").innerText =
+        "$" + terminalValue.toFixed(1) + "m";
+
+    document.getElementById("pvTerminal").innerText =
+        "$" + pvTerminal.toFixed(1) + "m";
+
+
+    /* SENSITIVITY ANALYSIS */
+
+    createSensitivity(
+
+        startingRevenue,
+        growth,
+        margin,
+        tax,
+        capexRate,
+        nwcRate,
+        cash,
+        debt,
+        shares
+
+    );
+
 }
+
+
+function calculateSharePrice(
+
+    startingRevenue,
+    growth,
+    margin,
+    tax,
+    capexRate,
+    nwcRate,
+    cash,
+    debt,
+    shares,
+    wacc,
+    terminalGrowth
+
+) {
+
+
+    let revenue = startingRevenue;
+
+    let totalPV = 0;
+
+
+    for (let year = 1; year <= 5; year++) {
+
+        revenue =
+            revenue * (1 + growth);
+
+        let EBITDA =
+            revenue * margin;
+
+        let EBIT =
+            EBITDA;
+
+        let NOPAT =
+            EBIT * (1 - tax);
+
+        let CapEx =
+            revenue * capexRate;
+
+        let ChangeNWC =
+            revenue * nwcRate;
+
+        let FCF =
+            NOPAT - CapEx - ChangeNWC;
+
+        let PV_FCF =
+            FCF / Math.pow(1 + wacc, year);
+
+        totalPV += PV_FCF;
+
+    }
+
+
+    let terminalRevenue =
+        revenue * (1 + terminalGrowth);
+
+    let terminalEBITDA =
+        terminalRevenue * margin;
+
+    let terminalEBIT =
+        terminalEBITDA;
+
+    let terminalNOPAT =
+        terminalEBIT * (1 - tax);
+
+    let terminalCapEx =
+        terminalRevenue * capexRate;
+
+    let terminalNWC =
+        terminalRevenue * nwcRate;
+
+    let terminalFCF =
+        terminalNOPAT -
+        terminalCapEx -
+        terminalNWC;
+
+
+    let terminalValue =
+        terminalFCF /
+        (wacc - terminalGrowth);
+
+
+    let pvTerminal =
+        terminalValue /
+        Math.pow(1 + wacc, 5);
+
+
+    let enterpriseValue =
+        totalPV + pvTerminal;
+
+
+    let equityValue =
+        enterpriseValue + cash - debt;
+
+
+    return equityValue / shares;
+
+}
+
+
+function createSensitivity(
+
+    startingRevenue,
+    growth,
+    margin,
+    tax,
+    capexRate,
+    nwcRate,
+    cash,
+    debt,
+    shares
+
+) {
+
+
+    let waccValues = [0.08, 0.09, 0.10, 0.11, 0.12];
+
+    let terminalValues = [0.02, 0.025, 0.03, 0.035, 0.04];
+
+
+    let header = "<tr><th>WACC / Terminal Growth</th>";
+
+    terminalValues.forEach(function(tg) {
+
+        header += "<th>" +
+            (tg * 100).toFixed(1) +
+            "%</th>";
+
+    });
+
+    header += "</tr>";
+
+
+    document.getElementById("sensitivityHeader").innerHTML =
+        header;
+
+
+    let body = "";
+
+
+    waccValues.forEach(function(wacc) {
+
+        body += "<tr>";
+
+        body += "<td>" +
+            (wacc * 100).toFixed(0) +
+            "%</td>";
+
+
+        terminalValues.forEach(function(tg) {
+
+            let price =
+                calculateSharePrice(
+
+                    startingRevenue,
+                    growth,
+                    margin,
+                    tax,
+                    capexRate,
+                    nwcRate,
+                    cash,
+                    debt,
+                    shares,
+                    wacc,
+                    tg
+
+                );
+
+
+            body += "<td>$" +
+                price.toFixed(2) +
+                "</td>";
+
+        });
+
+
+        body += "</tr>";
+
+    });
+
+
+    document.getElementById("sensitivityBody").innerHTML =
+        body;
+
+}
+
 
 calculateDCF();
 
