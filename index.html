@@ -318,7 +318,14 @@ label{
   font-weight:750;
   margin-bottom:5px;
 }
-.field{margin-bottom:13px}
+.field{margin-bottom:13px;position:relative}
+.autocomplete-list{position:absolute;top:calc(100% - 7px);left:0;right:0;z-index:180;max-height:310px;overflow:auto;background:#fff;border:1px solid #dcd2e2;border-radius:11px;box-shadow:0 14px 32px rgba(45,28,57,.16);padding:5px}
+.autocomplete-option{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:10px 11px;border:0;border-radius:8px;background:#fff;text-align:left;color:var(--ink)}
+.autocomplete-option:hover,.autocomplete-option.active{background:#f4edf7}
+.autocomplete-option strong{display:block;font-size:12px;color:var(--purple)}
+.autocomplete-option small{display:block;margin-top:2px;color:var(--muted);font-size:10px}
+.autocomplete-option .ticker{font-size:10px;font-weight:800;color:var(--slate);white-space:nowrap}
+.autocomplete-empty{padding:12px;font-size:12px;color:var(--muted)}
 input,select,textarea{
   width:100%;
   border:1px solid #ddd6e2;
@@ -846,7 +853,7 @@ td strong{color:var(--purple)}
   <div class="section-head">
     <div>
       <h2>Company Analysis</h2>
-      <p>Global public-company universe with live-data integration hooks.</p>
+      <p>Expanded global public-company directory across regions and sectors; built-in financial assumptions are illustrative.</p>
     </div>
     <div style="display:flex;gap:7px">
       <button class="btn btn-small btn-secondary" onclick="loadLiveData()">Refresh Live Data</button>
@@ -859,11 +866,12 @@ td strong{color:var(--purple)}
       <div class="input-grid">
         <div class="field">
           <label>Search company</label>
-          <input id="companySearch" placeholder="Apple, Reliance, Toyota..." oninput="renderCompanies()">
+          <input id="companySearch" placeholder="Search company name or ticker..." autocomplete="off" aria-autocomplete="list" aria-controls="companySuggestions" oninput="handleCompanySearch()" onkeydown="handleCompanySearchKeydown(event)">
+          <div id="companySuggestions" class="autocomplete-list hidden" role="listbox" aria-label="Company suggestions"></div>
         </div>
         <div class="field">
           <label>Region</label>
-          <select id="regionFilter" onchange="renderCompanies()">
+          <select id="regionFilter" onchange="renderCompanies();renderCompanySuggestions()">
             <option value="">All regions</option>
             <option>North America</option>
             <option>Europe</option>
@@ -871,11 +879,13 @@ td strong{color:var(--purple)}
             <option>India</option>
             <option>Latin America</option>
             <option>Middle East</option>
+            <option>Africa</option>
+            <option>Oceania</option>
           </select>
         </div>
         <div class="field">
           <label>Sector</label>
-          <select id="sectorFilter" onchange="renderCompanies()">
+          <select id="sectorFilter" onchange="renderCompanies();renderCompanySuggestions()">
             <option value="">All sectors</option>
             <option>Technology</option>
             <option>Financials</option>
@@ -884,6 +894,9 @@ td strong{color:var(--purple)}
             <option>Industrials</option>
             <option>Energy</option>
             <option>Telecom</option>
+            <option>Materials</option>
+            <option>Utilities</option>
+            <option>Real Estate</option>
           </select>
         </div>
       </div>
@@ -1492,6 +1505,9 @@ td strong{color:var(--purple)}
 
 <div id="toast" class="toast"></div>
 
+<!-- Optional hosted backend URL. Set this to your Render service URL, without a trailing slash. -->
+<script>window.VALUATION_API_BASE = window.VALUATION_API_BASE || "";</script>
+
 <!-- PDF parsing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs" type="module"></script>
 
@@ -1559,6 +1575,214 @@ const companies = [
   {name:"Saudi Aramco",ticker:"2222.SR",region:"Middle East",sector:"Energy",currency:"USD",revenue:480000,margin:0.48,price:8.50,shares:24200,cash:80000,debt:45000,growth:0.03,beta:0.60,evRev:2.0,evEbitda:4.0,pe:15},
   {name:"Emirates NBD",ticker:"ENBD.DU",region:"Middle East",sector:"Financials",currency:"AED",revenue:32000,margin:0.40,price:22,shares:6500,cash:0,debt:0,growth:0.10,beta:0.90,evRev:4.0,evEbitda:10,pe:11}
 ];
+
+// Expanded international directory. These entries are company lookup records, not live quotes.
+// Their financial assumptions are generated as illustrative placeholders until a market-data API is connected.
+const additionalCompanyDirectory = `
+Berkshire Hathaway|BRK.B|North America|Financials|USD
+Exxon Mobil|XOM|North America|Energy|USD
+Chevron|CVX|North America|Energy|USD
+ConocoPhillips|COP|North America|Energy|USD
+Procter & Gamble|PG|North America|Consumer|USD
+PepsiCo|PEP|North America|Consumer|USD
+McDonald's|MCD|North America|Consumer|USD
+Costco Wholesale|COST|North America|Consumer|USD
+Home Depot|HD|North America|Consumer|USD
+Adobe|ADBE|North America|Technology|USD
+Advanced Micro Devices|AMD|North America|Technology|USD
+Intel|INTC|North America|Technology|USD
+Qualcomm|QCOM|North America|Technology|USD
+Cisco Systems|CSCO|North America|Technology|USD
+IBM|IBM|North America|Technology|USD
+Netflix|NFLX|North America|Technology|USD
+Uber Technologies|UBER|North America|Industrials|USD
+Airbnb|ABNB|North America|Consumer|USD
+Booking Holdings|BKNG|North America|Consumer|USD
+ServiceNow|NOW|North America|Technology|USD
+Intuit|INTU|North America|Technology|USD
+Accenture|ACN|North America|Technology|USD
+BlackRock|BLK|North America|Financials|USD
+Morgan Stanley|MS|North America|Financials|USD
+Bank of America|BAC|North America|Financials|USD
+Wells Fargo|WFC|North America|Financials|USD
+Citigroup|C|North America|Financials|USD
+Mastercard|MA|North America|Financials|USD
+American Express|AXP|North America|Financials|USD
+Pfizer|PFE|North America|Healthcare|USD
+Merck & Co|MRK|North America|Healthcare|USD
+AbbVie|ABBV|North America|Healthcare|USD
+Thermo Fisher Scientific|TMO|North America|Healthcare|USD
+Abbott Laboratories|ABT|North America|Healthcare|USD
+UnitedHealth Group|UNH|North America|Healthcare|USD
+CVS Health|CVS|North America|Healthcare|USD
+Boeing|BA|North America|Industrials|USD
+Caterpillar|CAT|North America|Industrials|USD
+GE Aerospace|GE|North America|Industrials|USD
+Honeywell|HON|North America|Industrials|USD
+Lockheed Martin|LMT|North America|Industrials|USD
+UPS|UPS|North America|Industrials|USD
+FedEx|FDX|North America|Industrials|USD
+Deere & Company|DE|North America|Industrials|USD
+NextEra Energy|NEE|North America|Utilities|USD
+Duke Energy|DUK|North America|Utilities|USD
+American Tower|AMT|North America|Real Estate|USD
+Prologis|PLD|North America|Real Estate|USD
+Realty Income|O|North America|Real Estate|USD
+T-Mobile US|TMUS|North America|Telecom|USD
+Verizon|VZ|North America|Telecom|USD
+AT&T|T|North America|Telecom|USD
+Dow Inc|DOW|North America|Materials|USD
+Freeport-McMoRan|FCX|North America|Materials|USD
+Linde|LIN|North America|Materials|USD
+Novo Nordisk|NOVO-B.CO|Europe|Healthcare|DKK
+Roche|ROG.SW|Europe|Healthcare|CHF
+Novartis|NOVN.SW|Europe|Healthcare|CHF
+HSBC|HSBA.L|Europe|Financials|GBP
+UBS Group|UBSG.SW|Europe|Financials|CHF
+BNP Paribas|BNP.PA|Europe|Financials|EUR
+Banco Santander|SAN.MC|Europe|Financials|EUR
+Allianz|ALV.DE|Europe|Financials|EUR
+Deutsche Bank|DBK.DE|Europe|Financials|EUR
+Deutsche Telekom|DTE.DE|Europe|Telecom|EUR
+Schneider Electric|SU.PA|Europe|Industrials|EUR
+Safran|SAF.PA|Europe|Industrials|EUR
+TotalEnergies|TTE.PA|Europe|Energy|EUR
+BP|BP.L|Europe|Energy|GBP
+Rio Tinto|RIO.L|Europe|Materials|GBP
+Glencore|GLEN.L|Europe|Materials|GBP
+Volkswagen|VOW3.DE|Europe|Consumer|EUR
+BMW|BMW.DE|Europe|Consumer|EUR
+Mercedes-Benz Group|MBG.DE|Europe|Consumer|EUR
+Ferrari|RACE|Europe|Consumer|EUR
+Adidas|ADS.DE|Europe|Consumer|EUR
+Inditex|ITX.MC|Europe|Consumer|EUR
+Hermes International|RMS.PA|Europe|Consumer|EUR
+Kering|KER.PA|Europe|Consumer|EUR
+RELX|REL.L|Europe|Industrials|GBP
+London Stock Exchange Group|LSEG.L|Europe|Financials|GBP
+Barclays|BARC.L|Europe|Financials|GBP
+Lloyds Banking Group|LLOY.L|Europe|Financials|GBP
+Reckitt|RKT.L|Europe|Consumer|GBP
+Diageo|DGE.L|Europe|Consumer|GBP
+Philips|PHIA.AS|Europe|Healthcare|EUR
+ABB|ABBN.SW|Europe|Industrials|CHF
+Ericsson|ERIC-B.ST|Europe|Technology|SEK
+Nokia|NOKIA.HE|Europe|Technology|EUR
+Spotify|SPOT|Europe|Technology|EUR
+Mitsubishi UFJ Financial|8306.T|Asia-Pacific|Financials|JPY
+Keyence|6861.T|Asia-Pacific|Technology|JPY
+Nintendo|7974.T|Asia-Pacific|Technology|JPY
+Hitachi|6501.T|Asia-Pacific|Industrials|JPY
+Panasonic Holdings|6752.T|Asia-Pacific|Consumer|JPY
+Honda Motor|7267.T|Asia-Pacific|Consumer|JPY
+Mitsubishi Heavy Industries|7011.T|Asia-Pacific|Industrials|JPY
+SK Hynix|000660.KS|Asia-Pacific|Technology|KRW
+Hyundai Motor|005380.KS|Asia-Pacific|Consumer|KRW
+Kia|000270.KS|Asia-Pacific|Consumer|KRW
+LG Energy Solution|373220.KS|Asia-Pacific|Industrials|KRW
+CATL|300750.SZ|Asia-Pacific|Industrials|CNY
+Meituan|3690.HK|Asia-Pacific|Technology|HKD
+JD.com|JD|Asia-Pacific|Consumer|USD
+PDD Holdings|PDD|Asia-Pacific|Consumer|USD
+Baidu|BIDU|Asia-Pacific|Technology|USD
+Xiaomi|1810.HK|Asia-Pacific|Technology|HKD
+China Mobile|0941.HK|Asia-Pacific|Telecom|HKD
+ICBC|1398.HK|Asia-Pacific|Financials|HKD
+China Construction Bank|0939.HK|Asia-Pacific|Financials|HKD
+Ping An Insurance|2318.HK|Asia-Pacific|Financials|HKD
+AIA Group|1299.HK|Asia-Pacific|Financials|HKD
+DBS Group|D05.SI|Asia-Pacific|Financials|SGD
+Singtel|Z74.SI|Asia-Pacific|Telecom|SGD
+CSL Limited|CSL.AX|Oceania|Healthcare|AUD
+Commonwealth Bank of Australia|CBA.AX|Oceania|Financials|AUD
+National Australia Bank|NAB.AX|Oceania|Financials|AUD
+ANZ Group|ANZ.AX|Oceania|Financials|AUD
+Westpac|WBC.AX|Oceania|Financials|AUD
+Macquarie Group|MQG.AX|Oceania|Financials|AUD
+BHP Group|BHP.AX|Oceania|Materials|AUD
+Fortescue|FMG.AX|Oceania|Materials|AUD
+Woodside Energy|WDS.AX|Oceania|Energy|AUD
+Telstra|TLS.AX|Oceania|Telecom|AUD
+Xero|XRO.AX|Oceania|Technology|AUD
+Fisher & Paykel Healthcare|FPH.NZ|Oceania|Healthcare|NZD
+Ambev|ABEV|Latin America|Consumer|USD
+Itaú Unibanco|ITUB|Latin America|Financials|USD
+Nu Holdings|NU|Latin America|Financials|USD
+Banco do Brasil|BDORY|Latin America|Financials|USD
+Grupo México|GMEXICOB.MX|Latin America|Materials|MXN
+América Móvil|AMX|Latin America|Telecom|USD
+FEMSA|FMX|Latin America|Consumer|USD
+WEG|WEGE3.SA|Latin America|Industrials|BRL
+Cemex|CEMEXCPO.MX|Latin America|Materials|MXN
+Naspers|NPN.JO|Africa|Technology|ZAR
+MTN Group|MTN.JO|Africa|Telecom|ZAR
+Standard Bank Group|SBK.JO|Africa|Financials|ZAR
+FirstRand|FSR.JO|Africa|Financials|ZAR
+Sasol|SOL.JO|Africa|Energy|ZAR
+Shoprite Holdings|SHP.JO|Africa|Consumer|ZAR
+Airtel Africa|AAF.L|Africa|Telecom|GBP
+Safaricom|SCOM.NR|Africa|Telecom|KES
+Dangote Cement|DANGCEM.LG|Africa|Materials|NGN
+Qatar National Bank|QNBK.QA|Middle East|Financials|QAR
+ADNOC Gas|ADNOCGAS.AD|Middle East|Energy|AED
+e&|EAND.AD|Middle East|Telecom|AED
+Al Rajhi Bank|1120.SR|Middle East|Financials|SAR
+Saudi Telecom Company|7010.SR|Middle East|Telecom|SAR
+SABIC|2010.SR|Middle East|Materials|SAR
+Kuwait Finance House|KFH.KW|Middle East|Financials|KWD
+
+HDFC Life|HDFCLIFE.NS|India|Financials|INR
+State Bank of India|SBIN.NS|India|Financials|INR
+Axis Bank|AXISBANK.NS|India|Financials|INR
+Kotak Mahindra Bank|KOTAKBANK.NS|India|Financials|INR
+Bajaj Finance|BAJFINANCE.NS|India|Financials|INR
+Life Insurance Corporation of India|LICI.NS|India|Financials|INR
+Maruti Suzuki|MARUTI.NS|India|Consumer|INR
+Mahindra & Mahindra|M&M.NS|India|Consumer|INR
+Tata Motors|TATAMOTORS.NS|India|Consumer|INR
+Titan Company|TITAN.NS|India|Consumer|INR
+Asian Paints|ASIANPAINT.NS|India|Materials|INR
+UltraTech Cement|ULTRACEMCO.NS|India|Materials|INR
+JSW Steel|JSWSTEEL.NS|India|Materials|INR
+NTPC|NTPC.NS|India|Utilities|INR
+Power Grid Corporation|POWERGRID.NS|India|Utilities|INR
+Adani Ports|ADANIPORTS.NS|India|Industrials|INR
+Adani Enterprises|ADANIENT.NS|India|Industrials|INR
+Zomato|ETERNAL.NS|India|Consumer|INR
+Trent|TRENT.NS|India|Consumer|INR
+Sun Pharmaceutical|SUNPHARMA.NS|India|Healthcare|INR
+Dr Reddy's Laboratories|DRREDDY.NS|India|Healthcare|INR
+Cipla|CIPLA.NS|India|Healthcare|INR
+Wipro|WIPRO.NS|India|Technology|INR
+HCL Technologies|HCLTECH.NS|India|Technology|INR
+Tech Mahindra|TECHM.NS|India|Technology|INR
+
+`.trim().split(/\n/).map(line=>line.trim()).filter(Boolean).map(line=>line.split("|"));
+
+const illustrativeSectorDefaults = {
+  Technology:{revenue:52000,margin:.24,price:145,growth:.10,beta:1.15,evRev:6.2,evEbitda:19,pe:29},
+  Financials:{revenue:42000,margin:.25,price:85,growth:.07,beta:1.05,evRev:3.3,evEbitda:11,pe:15},
+  Healthcare:{revenue:28000,margin:.22,price:125,growth:.08,beta:.75,evRev:4.8,evEbitda:16,pe:23},
+  Consumer:{revenue:38000,margin:.13,price:95,growth:.06,beta:.9,evRev:2.4,evEbitda:14,pe:22},
+  Industrials:{revenue:30000,margin:.15,price:110,growth:.06,beta:1.05,evRev:2.0,evEbitda:12,pe:19},
+  Energy:{revenue:60000,margin:.16,price:75,growth:.04,beta:1.0,evRev:1.5,evEbitda:7.5,pe:12},
+  Telecom:{revenue:25000,margin:.28,price:55,growth:.05,beta:.7,evRev:2.6,evEbitda:7.5,pe:17},
+  Materials:{revenue:24000,margin:.17,price:65,growth:.04,beta:1.1,evRev:1.8,evEbitda:9.5,pe:15},
+  Utilities:{revenue:18000,margin:.20,price:45,growth:.04,beta:.55,evRev:3.2,evEbitda:10.5,pe:17},
+  "Real Estate":{revenue:9000,margin:.35,price:80,growth:.05,beta:.8,evRev:8.0,evEbitda:17,pe:28}
+};
+
+for(const [name,ticker,region,sector,currency] of additionalCompanyDirectory){
+  if(companies.some(c=>c.ticker.toLowerCase()===ticker.toLowerCase())) continue;
+  const d=illustrativeSectorDefaults[sector]||illustrativeSectorDefaults.Technology;
+  const seed=[...ticker].reduce((sum,ch)=>sum+ch.charCodeAt(0),0);
+  const factor=.72+(seed%57)/100;
+  const revenue=Math.round(d.revenue*factor);
+  const priceValue=Math.round(d.price*(.70+(seed%65)/100)*100)/100;
+  const shares=Math.max(10,Math.round(revenue/Math.max(priceValue,1)));
+  companies.push({name,ticker,region,sector,currency,revenue,margin:d.margin,price:priceValue,shares,cash:Math.round(revenue*.12),debt:Math.round(revenue*.28),growth:d.growth,beta:d.beta,evRev:d.evRev,evEbitda:d.evEbitda,pe:d.pe});
+}
+
 
 const precedents = [
   {target:"DataCore Systems",acquirer:"Global Software Co.",sector:"Technology",region:"North America",value:8400,evRev:6.8,evEbitda:19.5},
@@ -1641,18 +1865,33 @@ function setVal(id,v){
   if($(id)) $(id).value = v;
 }
 
+function currentCurrency(){return state.selectedCompany?.currency||"USD";}
+
+function currencySymbol(currency=currentCurrency()){
+  try{
+    return new Intl.NumberFormat("en",{style:"currency",currency, currencyDisplay:"narrowSymbol",maximumFractionDigits:0})
+      .formatToParts(1).find(part=>part.type==="currency")?.value||currency+" ";
+  }catch{return currency+" ";}
+}
+
+function formatCurrency(v,currency=currentCurrency(),digits=2){
+  if(!Number.isFinite(Number(v))) return "—";
+  try{
+    return new Intl.NumberFormat("en",{style:"currency",currency,currencyDisplay:"narrowSymbol",minimumFractionDigits:digits,maximumFractionDigits:digits}).format(Number(v));
+  }catch{return `${currency} ${Number(v).toLocaleString("en",{maximumFractionDigits:digits})}`;}
+}
+
 function money(v){
   if(!Number.isFinite(v)) return "—";
-  const abs=Math.abs(v);
-  const sign=v<0?"-":"";
-  if(abs>=1000000) return sign+(abs/1000000).toFixed(1)+"T";
-  if(abs>=1000) return sign+(abs/1000).toFixed(1)+"B";
-  return sign+abs.toFixed(1)+"M";
+  const abs=Math.abs(v),sign=v<0?"-":"",symbol=currencySymbol();
+  if(abs>=1000000) return sign+symbol+(abs/1000000).toFixed(1)+"T";
+  if(abs>=1000) return sign+symbol+(abs/1000).toFixed(1)+"B";
+  return sign+symbol+abs.toFixed(1)+"M";
 }
 
 function moneyFull(v){
   if(!Number.isFinite(v)) return "—";
-  return new Intl.NumberFormat("en-US",{maximumFractionDigits:1}).format(v);
+  return formatCurrency(v,currentCurrency(),0);
 }
 
 function pct(v){
@@ -1660,7 +1899,7 @@ function pct(v){
 }
 
 function price(v){
-  return Number.isFinite(v)?"$"+v.toFixed(2):"—";
+  return Number.isFinite(v)?formatCurrency(v,currentCurrency(),2):"—";
 }
 
 function median(arr){
@@ -1705,9 +1944,7 @@ function applyCompany(company){
   $("selectedCompanyMeta").textContent=
     `${company.ticker} · ${company.sector} · ${company.region}`;
 
-  $("companyPrice").textContent=company.currency==="USD"
-    ? price(company.price)
-    : company.price.toLocaleString()+" "+company.currency;
+  $("companyPrice").textContent=formatCurrency(company.price,company.currency,2);
 
   $("companyMarketCap").textContent=money(company.price*company.shares);
   $("companyRevenue").textContent=money(company.revenue);
@@ -1721,27 +1958,33 @@ function applyCompany(company){
   renderCompanies();
 }
 
-function applyCompanyToModel(){
+function syncSelectedCompanyToModel(){
   const c=state.selectedCompany;
-  model.revenue=c.revenue;
-  model.growth=c.growth*100;
-  model.ebitdaMargin=c.margin*100;
-  model.cash=c.cash;
-  model.debt=c.debt;
-  model.shares=c.shares;
-
-  if(c.beta){
-    model.beta=c.beta;
-  }
-
-  model.waccEquity=c.price*c.shares;
-  model.waccDebt=c.debt;
-
+  if(!c)return;
+  model.revenue=Number(c.revenue)||0;
+  model.growth=(Number(c.growth)||0)*100;
+  model.ebitdaMargin=(Number(c.margin)||0)*100;
+  model.cash=Number(c.cash)||0;
+  model.debt=Number(c.debt)||0;
+  model.shares=Number(c.shares)||0;
+  if(Number.isFinite(Number(c.beta))) model.beta=Number(c.beta);
+  model.waccEquity=(Number(c.price)||0)*(Number(c.shares)||0);
+  model.waccDebt=Number(c.debt)||0;
+  // Keep the WACC builder and M&A acquirer assumptions aligned with the selected company.
+  if($("beta")) setVal("beta",model.beta);
+  if($("waccEquity")) setVal("waccEquity",model.waccEquity);
+  if($("waccDebt")) setVal("waccDebt",model.waccDebt);
+  if($("maAcquirerShares")) setVal("maAcquirerShares",model.shares);
+  if($("maAcquirerPrice")) setVal("maAcquirerPrice",Number(c.price)||0);
   loadModelToInputs();
   calculateWACC();
   calculate();
+  if(typeof calculateMA === "function") calculateMA();
+}
 
-  toast(`${c.name} applied to valuation model`);
+function applyCompanyToModel(){
+  syncSelectedCompanyToModel();
+  toast(`${state.selectedCompany.name} applied to valuation model`);
   location.hash="#dcf";
 }
 
@@ -1749,38 +1992,83 @@ function applyCompanyToModel(){
    COMPANY UNIVERSE
 ============================================================ */
 
-function renderCompanies(){
+function filteredCompanies(){
   const q=($("companySearch").value||"").toLowerCase().trim();
   const region=$("regionFilter").value;
   const sector=$("sectorFilter").value;
-
-  const list=companies.filter(c=>{
-    const text=(c.name+" "+c.ticker+" "+c.region+" "+c.sector).toLowerCase();
-    return (!q||text.includes(q)) &&
-           (!region||c.region===region) &&
-           (!sector||c.sector===sector);
+  return companies.filter(c=>{
+    const text=(c.name+" "+c.ticker+" "+c.region+" "+c.sector+" "+c.currency).toLowerCase();
+    return (!q||text.includes(q))&&(!region||c.region===region)&&(!sector||c.sector===sector);
+  }).sort((a,b)=>{
+    if(!q)return a.name.localeCompare(b.name);
+    const an=a.name.toLowerCase(),at=a.ticker.toLowerCase(),bn=b.name.toLowerCase(),bt=b.ticker.toLowerCase();
+    const score=c=>c.name.toLowerCase()===q?0:c.ticker.toLowerCase()===q?1:c.name.toLowerCase().startsWith(q)?2:c.ticker.toLowerCase().startsWith(q)?3:4;
+    return score(a)-score(b)||an.localeCompare(bn);
   });
-
-  $("companyList").innerHTML=list.map(c=>`
-    <div class="company-item ${state.selectedCompany?.ticker===c.ticker?"active":""}"
-         onclick="selectCompany('${c.ticker}')">
-      <div class="company-top">
-        <div class="company-name">${c.name}</div>
-        <span class="badge badge-purple">${c.ticker}</span>
-      </div>
-      <div class="company-meta">${c.sector} · ${c.region}</div>
-    </div>
-  `).join("") || `<div class="empty">No companies found.</div>`;
 }
+
+let activeCompanySuggestion=-1;
+
+function renderCompanies(){
+  const list=filteredCompanies();
+  $("companyList").innerHTML=list.map(c=>`
+    <div class="company-item ${state.selectedCompany?.ticker===c.ticker?"active":""}" onclick="selectCompany('${c.ticker}')">
+      <div class="company-top"><div class="company-name">${escapeHTML(c.name)}</div><span class="badge badge-purple">${escapeHTML(c.ticker)}</span></div>
+      <div class="company-meta">${escapeHTML(c.sector)} · ${escapeHTML(c.region)} · ${escapeHTML(c.currency)}</div>
+    </div>`).join("")||`<div class="empty">No companies found. Try a different name, ticker, region or sector.</div>`;
+}
+
+function renderCompanySuggestions(){
+  const input=$("companySearch"),panel=$("companySuggestions");
+  const q=(input.value||"").trim();
+  if(!q){panel.classList.add("hidden");panel.innerHTML="";activeCompanySuggestion=-1;return;}
+  const list=filteredCompanies().slice(0,10);
+  if(!list.length){panel.innerHTML='<div class="autocomplete-empty">No matches. Try a ticker or clear the region/sector filters.</div>';panel.classList.remove("hidden");activeCompanySuggestion=-1;return;}
+  panel.innerHTML=list.map((c,i)=>`<button type="button" role="option" aria-selected="${i===activeCompanySuggestion}" class="autocomplete-option ${i===activeCompanySuggestion?"active":""}" onmousedown="event.preventDefault()" onclick="chooseCompanySuggestion('${c.ticker}')"><span><strong>${escapeHTML(c.name)}</strong><small>${escapeHTML(c.sector)} · ${escapeHTML(c.region)} · ${escapeHTML(c.currency)}</small></span><span class="ticker">${escapeHTML(c.ticker)}</span></button>`).join("");
+  panel.classList.remove("hidden");
+}
+
+function handleCompanySearch(){
+  activeCompanySuggestion=-1;
+  renderCompanies();
+  renderCompanySuggestions();
+}
+
+function handleCompanySearchKeydown(event){
+  const panel=$("companySuggestions");
+  const options=[...panel.querySelectorAll(".autocomplete-option")];
+  if(event.key==="ArrowDown"&&options.length){event.preventDefault();activeCompanySuggestion=(activeCompanySuggestion+1)%options.length;renderCompanySuggestions();}
+  else if(event.key==="ArrowUp"&&options.length){event.preventDefault();activeCompanySuggestion=(activeCompanySuggestion<=0?options.length-1:activeCompanySuggestion-1);renderCompanySuggestions();}
+  else if(event.key==="Enter"&&!panel.classList.contains("hidden")&&options.length){event.preventDefault();const index=activeCompanySuggestion>=0?activeCompanySuggestion:0;const ticker=options[index]?.querySelector(".ticker")?.textContent; if(ticker)chooseCompanySuggestion(ticker);}
+  else if(event.key==="Escape"){panel.classList.add("hidden");activeCompanySuggestion=-1;}
+}
+
+function chooseCompanySuggestion(ticker){
+  const c=companies.find(x=>x.ticker===ticker);
+  if(!c)return;
+  $("companySearch").value=c.name;
+  $("companySuggestions").classList.add("hidden");
+  activeCompanySuggestion=-1;
+  selectCompany(ticker);
+}
+
+document.addEventListener("click",event=>{
+  if(!event.target.closest("#companySearch")&&!event.target.closest("#companySuggestions")){
+    $("companySuggestions")?.classList.add("hidden");
+  }
+});
 
 function selectCompany(ticker){
   const c=companies.find(x=>x.ticker===ticker);
   if(!c)return;
   state.selectedCompany=c;
+  if($("companySuggestions")) $("companySuggestions").classList.add("hidden");
   state.dataSource="Illustrative";
   $("liveDataNotice").innerHTML=
-    `Selected <strong>${c.name}</strong>. Built-in financials are illustrative until live data is returned by your backend.`;
+    `Selected <strong>${escapeHTML(c.name)}</strong>. Built-in financials are illustrative until live data is returned by your backend. The DCF model has been updated to this company.`;
   applyCompany(c);
+  // Selecting a company immediately refreshes the DCF/WACC/M&A outputs.
+  syncSelectedCompanyToModel();
 }
 
 /* ============================================================
@@ -1797,7 +2085,7 @@ async function loadLiveData(){
   $("liveDataNotice").textContent="Connecting to secure market-data backend...";
 
   try{
-    const response=await fetch("/api/market",{
+    const response=await fetch(`${window.VALUATION_API_BASE||""}/api/market`,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({ticker})
@@ -2660,7 +2948,7 @@ async function askCopilot(question){
   messages.scrollTop=messages.scrollHeight;
 
   try{
-    const response=await fetch("/api/copilot",{
+    const response=await fetch(`${window.VALUATION_API_BASE||""}/api/copilot`,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
@@ -2794,162 +3082,88 @@ function renderSavedModels(){
    EXPORT EXCEL
 ============================================================ */
 
+function excelCurrencyFormat(currency){
+  const symbols={USD:'$ ',EUR:'€ ',GBP:'£ ',INR:'₹ ',JPY:'¥ ',CNY:'¥ ',HKD:'HK$ ',SGD:'S$ ',AUD:'A$ ',NZD:'NZ$ ',CAD:'C$ ',CHF:'CHF ',KRW:'₩ ',BRL:'R$ ',MXN:'MX$ ',ZAR:'R ',AED:'AED ',SAR:'SAR ',QAR:'QAR ',KWD:'KWD ',SEK:'kr ',NOK:'kr ',DKK:'kr ',PLN:'zł ',IDR:'Rp ',THB:'฿ ',PHP:'₱ ',TWD:'NT$ ',KES:'KSh ',NGN:'₦ '};
+  const symbol=symbols[currency]||`${currency} `;
+  const quoted='"'+symbol.replace(/"/g,'""')+'"';
+  return `${quoted}#,##0.00;[Red]-${quoted}#,##0.00`;
+}
+
+function setCellFormat(ws,address,format){
+  if(ws&&ws[address]&&typeof ws[address].v==="number") ws[address].z=format;
+}
+
+function formatRange(ws,addresses,format){addresses.forEach(address=>setCellFormat(ws,address,format));}
+
 function exportExcel(){
-  if(typeof XLSX==="undefined"){
-    toast("Excel library unavailable");
-    return;
-  }
-
+  if(typeof XLSX==="undefined"){toast("Excel library unavailable");return;}
   calculate();
-
+  calculateWACC();
+  calculateMA();
+  const currency=state.selectedCompany?.currency||"USD";
+  const moneyFmt=excelCurrencyFormat(currency);
+  const percentFmt="0.0%;[Red]-0.0%";
+  const multipleFmt='0.0"x"';
   const wb=XLSX.utils.book_new();
 
   const dashboard=[
-    ["VALUATION STUDIO"],
-    ["Company",state.selectedCompany?.name],
-    ["Ticker",state.selectedCompany?.ticker],
-    ["Data Source",state.dataSource],
-    [],
-    ["DCF Enterprise Value",state.dcf?.ev],
-    ["DCF Equity Value",state.dcf?.equity],
-    ["Implied Share Price",state.dcf?.sharePrice],
-    ["WACC",state.dcf?.wacc/100],
-    ["Terminal Growth",state.dcf?.terminalGrowth/100],
-    [],
-    ["Trading Comps Median EV/Revenue",state.comps?.medRev],
-    ["Trading Comps Median EV/EBITDA",state.comps?.medEbitda],
-    ["Trading Comps Median P/E",state.comps?.medPE],
-    [],
-    ["Precedents Median EV/Revenue",state.precedents?.medRev],
-    ["Precedents Median EV/EBITDA",state.precedents?.medEbitda],
-    [],
-    ["M&A Accretion / Dilution",state.ma?.accretion/100]
+    ["VALUATION STUDIO"],["Company",state.selectedCompany?.name],["Ticker",state.selectedCompany?.ticker],["Currency",currency],["Data Source",state.dataSource],[],
+    ["DCF Enterprise Value",state.dcf?.ev],["DCF Equity Value",state.dcf?.equity],["Implied Share Price",state.dcf?.sharePrice],["WACC",state.dcf?.wacc/100],["Terminal Growth",state.dcf?.terminalGrowth/100],[],
+    ["Trading Comps Median EV/Revenue",state.comps?.medRev],["Trading Comps Median EV/EBITDA",state.comps?.medEbitda],["Trading Comps Median P/E",state.comps?.medPE],[],
+    ["Precedents Median EV/Revenue",state.precedents?.medRev],["Precedents Median EV/EBITDA",state.precedents?.medEbitda],[],["M&A Accretion / Dilution",state.ma?.accretion/100]
   ];
+  const dashboardWS=XLSX.utils.aoa_to_sheet(dashboard);
+  formatRange(dashboardWS,["B7","B8","B9"],moneyFmt);
+  formatRange(dashboardWS,["B10","B11","B20"],percentFmt);
+  formatRange(dashboardWS,["B13","B14","B15","B17","B18"],multipleFmt);
+  XLSX.utils.book_append_sheet(wb,dashboardWS,"Dashboard");
 
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(dashboard),
-    "Dashboard"
-  );
+  const dcfRows=[["Assumption","Value"],["Revenue",model.revenue],["Growth %",model.growth/100],["EBITDA Margin %",model.ebitdaMargin/100],["D&A %",model.daPct/100],["Tax Rate %",model.taxRate/100],["CapEx %",model.capexPct/100],["NWC %",model.nwcPct/100],["WACC %",model.wacc/100],["Terminal Growth %",model.terminalGrowth/100],["Cash",model.cash],["Debt",model.debt],["Shares",model.shares]];
+  const dcfWS=XLSX.utils.aoa_to_sheet(dcfRows);
+  formatRange(dcfWS,["B2","B11","B12"],moneyFmt);
+  formatRange(dcfWS,["B3","B4","B5","B6","B7","B8","B9","B10"],percentFmt);
+  setCellFormat(dcfWS,"B13","#,##0.00");
+  XLSX.utils.book_append_sheet(wb,dcfWS,"DCF Assumptions");
 
-  const dcfRows=[
-    ["Assumption","Value"],
-    ["Revenue",model.revenue],
-    ["Growth %",model.growth/100],
-    ["EBITDA Margin %",model.ebitdaMargin/100],
-    ["D&A %",model.daPct/100],
-    ["Tax Rate %",model.taxRate/100],
-    ["CapEx %",model.capexPct/100],
-    ["NWC %",model.nwcPct/100],
-    ["WACC %",model.wacc/100],
-    ["Terminal Growth %",model.terminalGrowth/100],
-    ["Cash",model.cash],
-    ["Debt",model.debt],
-    ["Shares",model.shares]
-  ];
+  const forecast=[["Metric","Year 1","Year 2","Year 3","Year 4","Year 5"],
+    ["Revenue",...state.forecast.map(x=>x.revenue)],["EBITDA",...state.forecast.map(x=>x.ebitda)],["EBIT",...state.forecast.map(x=>x.ebit)],
+    ["Taxes",...state.forecast.map(x=>x.taxes)],["NOPAT",...state.forecast.map(x=>x.nopat)],["CapEx",...state.forecast.map(x=>x.capex)],
+    ["Change NWC",...state.forecast.map(x=>x.nwc)],["FCF",...state.forecast.map(x=>x.fcf)],["PV FCF",...state.forecast.map(x=>x.pv)]];
+  const forecastWS=XLSX.utils.aoa_to_sheet(forecast);
+  for(let r=2;r<=10;r++)for(let c=1;c<=5;c++)setCellFormat(forecastWS,XLSX.utils.encode_cell({r:r-1,c}),moneyFmt);
+  XLSX.utils.book_append_sheet(wb,forecastWS,"Forecast");
 
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(dcfRows),
-    "DCF Assumptions"
-  );
+  const sens=[["WACC / Terminal Growth",...Array.from($("sensitivityTable").querySelectorAll("thead th")).slice(1).map(x=>x.textContent)]];
+  $("sensitivityTable").querySelectorAll("tbody tr").forEach(row=>sens.push([...row.querySelectorAll("th,td")].map(x=>x.textContent)));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sens),"Sensitivity");
 
-  const forecast=[
-    ["Metric","Year 1","Year 2","Year 3","Year 4","Year 5"],
-    ["Revenue",...state.forecast.map(x=>x.revenue)],
-    ["EBITDA",...state.forecast.map(x=>x.ebitda)],
-    ["EBIT",...state.forecast.map(x=>x.ebit)],
-    ["Taxes",...state.forecast.map(x=>x.taxes)],
-    ["NOPAT",...state.forecast.map(x=>x.nopat)],
-    ["CapEx",...state.forecast.map(x=>x.capex)],
-    ["Change NWC",...state.forecast.map(x=>x.nwc)],
-    ["FCF",...state.forecast.map(x=>x.fcf)],
-    ["PV FCF",...state.forecast.map(x=>x.pv)]
-  ];
+  const compRows=[["Company","Region","Currency","Revenue (local currency)","EBITDA (local currency)","EV/Revenue","EV/EBITDA","P/E"]];
+  state.comps?.peers.forEach(c=>compRows.push([c.name,c.region,c.currency,c.revenue,c.revenue*c.margin,c.evRev,c.evEbitda,c.pe]));
+  const compWS=XLSX.utils.aoa_to_sheet(compRows);
+  state.comps?.peers.forEach((c,i)=>{const row=i+2,fmt=excelCurrencyFormat(c.currency||currency);setCellFormat(compWS,`D${row}`,fmt);setCellFormat(compWS,`E${row}`,fmt);});
+  for(let r=2;r<=compRows.length;r++)formatRange(compWS,[`F${r}`,`G${r}`,`H${r}`],multipleFmt);
+  XLSX.utils.book_append_sheet(wb,compWS,"Trading Comps");
 
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(forecast),
-    "Forecast"
-  );
+  const preRows=[["Target","Acquirer","Sector","Region","Transaction Value","Currency","EV/Revenue","EV/EBITDA"]];
+  state.precedents?.rows.forEach(p=>preRows.push([p.target,p.acquirer,p.sector,p.region,p.value,currency,p.evRev,p.evEbitda]));
+  const preWS=XLSX.utils.aoa_to_sheet(preRows);
+  for(let r=2;r<=preRows.length;r++){setCellFormat(preWS,`E${r}`,moneyFmt);setCellFormat(preWS,`G${r}`,multipleFmt);setCellFormat(preWS,`H${r}`,multipleFmt);}
+  XLSX.utils.book_append_sheet(wb,preWS,"Precedents");
 
-  const sens=[
-    ["WACC / Terminal Growth",...Array.from(
-      $("sensitivityTable").querySelectorAll("thead th")
-    ).slice(1).map(x=>x.textContent)]
-  ];
+  const maRows=[["M&A Metric","Value"],["Purchase Price",state.ma?.purchase],["Cash Funding",state.ma?.cashFunding],["Stock Funding",state.ma?.stockFunding],["Debt Funding",state.ma?.debtFunding],["New Shares",state.ma?.newShares],["Financing Expense",state.ma?.financingExpense],["Pro Forma Net Income",state.ma?.proFormaNI],["Pro Forma EPS",state.ma?.proFormaEPS],["Standalone EPS",state.ma?.standaloneEPS],["Accretion / Dilution",state.ma?.accretion/100]];
+  const maWS=XLSX.utils.aoa_to_sheet(maRows);
+  formatRange(maWS,["B2","B3","B4","B5","B7","B8","B9","B10"],moneyFmt);
+  setCellFormat(maWS,"B6","#,##0.00");
+  setCellFormat(maWS,"B11",percentFmt);
+  XLSX.utils.book_append_sheet(wb,maWS,"M&A");
 
-  $("sensitivityTable").querySelectorAll("tbody tr").forEach(row=>{
-    sens.push([...row.querySelectorAll("th,td")].map(x=>x.textContent));
-  });
-
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(sens),
-    "Sensitivity"
-  );
-
-  const compRows=[
-    ["Company","Region","Revenue","EBITDA","EV/Revenue","EV/EBITDA","P/E"]
-  ];
-
-  state.comps?.peers.forEach(c=>{
-    compRows.push([
-      c.name,c.region,c.revenue,
-      c.revenue*c.margin,
-      c.evRev,c.evEbitda,c.pe
-    ]);
-  });
-
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(compRows),
-    "Trading Comps"
-  );
-
-  const preRows=[
-    ["Target","Acquirer","Sector","Region","Transaction Value","EV/Revenue","EV/EBITDA"]
-  ];
-
-  state.precedents?.rows.forEach(p=>{
-    preRows.push([
-      p.target,p.acquirer,p.sector,p.region,
-      p.value,p.evRev,p.evEbitda
-    ]);
-  });
-
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(preRows),
-    "Precedents"
-  );
-
-  const maRows=[
-    ["M&A Metric","Value"],
-    ["Purchase Price",state.ma?.purchase],
-    ["Cash Funding",state.ma?.cashFunding],
-    ["Stock Funding",state.ma?.stockFunding],
-    ["Debt Funding",state.ma?.debtFunding],
-    ["New Shares",state.ma?.newShares],
-    ["Financing Expense",state.ma?.financingExpense],
-    ["Pro Forma Net Income",state.ma?.proFormaNI],
-    ["Pro Forma EPS",state.ma?.proFormaEPS],
-    ["Standalone EPS",state.ma?.standaloneEPS],
-    ["Accretion / Dilution",state.ma?.accretion/100]
-  ];
-
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(maRows),
-    "M&A"
-  );
-
-  XLSX.writeFile(
-    wb,
-    `${(state.selectedCompany?.ticker||"valuation").replace(/[^a-z0-9]/gi,"_")}_valuation_model.xlsx`
-  );
-
-  toast("Excel workbook exported");
+  // Consistent readable widths and currency-aware number formats across workbook sheets.
+  for(const ws of Object.values(wb.Sheets)){
+    ws["!cols"] ||= Array.from({length:Math.max(2,ws["!ref"]?XLSX.utils.decode_range(ws["!ref"]).e.c+1:2)},()=>({wch:22}));
+    ws["!cols"]=ws["!cols"].map((col,i)=>({...col,wch:Math.min(Math.max(col.wch||16,14),34)}));
+  }
+  XLSX.writeFile(wb,`${(state.selectedCompany?.ticker||"valuation").replace(/[^a-z0-9]/gi,"_")}_valuation_model.xlsx`);
+  toast("Currency-formatted Excel workbook exported");
 }
 
 /* ============================================================
@@ -2958,96 +3172,51 @@ function exportExcel(){
 
 function exportPDF(){
   calculate();
-
-  if(window.jspdf?.jsPDF){
-    const {jsPDF}=window.jspdf;
-    const doc=new jsPDF();
-
-    let y=20;
-
-    function line(label,value){
-      doc.setFontSize(10);
-      doc.text(String(label),20,y);
-      doc.text(String(value),105,y);
-      y+=7;
-    }
-
-    doc.setFontSize(18);
-    doc.setTextColor(65,38,83);
-    doc.text("VALUATION STUDIO",20,y);
-    y+=9;
-
-    doc.setFontSize(13);
-    doc.text(
-      `${state.selectedCompany?.name||"Company"} · ${state.selectedCompany?.ticker||""}`,
-      20,y
-    );
-    y+=12;
-
-    doc.setTextColor(0,0,0);
-
-    line("Data Source",state.dataSource);
-    line("DCF Enterprise Value",money(state.dcf?.ev));
-    line("DCF Equity Value",money(state.dcf?.equity));
-    line("Implied Share Price",price(state.dcf?.sharePrice));
-    line("WACC",pct(state.dcf?.wacc));
-    line("Terminal Growth",pct(state.dcf?.terminalGrowth));
-    line("PV Forecast FCF",money(state.dcf?.pvFCF));
-    line("PV Terminal Value",money(state.dcf?.pvTerminal));
-
-    y+=5;
-    doc.setFontSize(12);
-    doc.setTextColor(65,38,83);
-    doc.text("Trading Comps",20,y);
-    y+=8;
-    doc.setTextColor(0,0,0);
-
-    line("Median EV / Revenue",state.comps?.medRev?.toFixed(1)+"x");
-    line("Median EV / EBITDA",state.comps?.medEbitda?.toFixed(1)+"x");
-    line("Median P / E",state.comps?.medPE?.toFixed(1)+"x");
-
-    y+=5;
-    doc.setFontSize(12);
-    doc.setTextColor(65,38,83);
-    doc.text("Precedents",20,y);
-    y+=8;
-    doc.setTextColor(0,0,0);
-
-    line("Median EV / Revenue",state.precedents?.medRev?.toFixed(1)+"x");
-    line("Median EV / EBITDA",state.precedents?.medEbitda?.toFixed(1)+"x");
-
-    y+=5;
-    doc.setFontSize(12);
-    doc.setTextColor(65,38,83);
-    doc.text("M&A",20,y);
-    y+=8;
-    doc.setTextColor(0,0,0);
-
-    line("Purchase Price",money(state.ma?.purchase));
-    line("Pro Forma EPS",state.ma?.proFormaEPS?.toFixed(2));
-    line("Accretion / Dilution",(state.ma?.accretion>=0?"+":"")+state.ma?.accretion?.toFixed(1)+"%");
-
-    if(y>260){
-      doc.addPage();
-      y=20;
-    }
-
-    y+=10;
-    doc.setFontSize(8);
-    doc.setTextColor(100,100,100);
-    doc.text(
-      "Educational modelling output. Verify financial data and assumptions independently.",
-      20,y
-    );
-
-    doc.save(
-      `${(state.selectedCompany?.ticker||"valuation").replace(/[^a-z0-9]/gi,"_")}_valuation_report.pdf`
-    );
-
-    toast("PDF report exported");
-  }else{
-    window.print();
-  }
+  calculateWACC();
+  calculateMA();
+  const c=state.selectedCompany||{name:"Company",ticker:"",currency:"USD"};
+  const currency=c.currency||"USD";
+  const cur=v=>formatCurrency(v,currency,2);
+  const safe=escapeHTML;
+  const reportWindow=window.open("","_blank");
+  if(!reportWindow){toast("Allow pop-ups to create the PDF report, then try again.");return;}
+  const reportRows=[
+    ["DCF Enterprise Value",cur(state.dcf?.ev)],
+    ["DCF Equity Value",cur(state.dcf?.equity)],
+    ["Implied Share Price",cur(state.dcf?.sharePrice)],
+    ["Present Value of Forecast FCF",cur(state.dcf?.pvFCF)],
+    ["Present Value of Terminal Value",cur(state.dcf?.pvTerminal)],
+    ["WACC",pct(state.dcf?.wacc)],
+    ["Terminal Growth",pct(state.dcf?.terminalGrowth)]
+  ];
+  const compsRows=[["Median EV / Revenue",`${state.comps?.medRev?.toFixed(1)||"—"}x`],["Median EV / EBITDA",`${state.comps?.medEbitda?.toFixed(1)||"—"}x`],["Median P / E",`${state.comps?.medPE?.toFixed(1)||"—"}x`]];
+  const precedentRows=[["Median EV / Revenue",`${state.precedents?.medRev?.toFixed(1)||"—"}x`],["Median EV / EBITDA",`${state.precedents?.medEbitda?.toFixed(1)||"—"}x`]];
+  const maRows=[["Purchase Price",cur(state.ma?.purchase)],["Pro Forma EPS",cur(state.ma?.proFormaEPS)],["Accretion / Dilution",`${state.ma?.accretion>=0?"+":""}${Number(state.ma?.accretion||0).toFixed(1)}%`]];
+  const rows=data=>data.map(([label,value])=>`<tr><th>${safe(String(label))}</th><td>${safe(String(value??"—"))}</td></tr>`).join("");
+  reportWindow.document.open();
+  reportWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safe(c.name)} — Valuation Report</title><style>
+  :root{--purple:#412653;--pink:#D174D2;--coral:#E0563F;--ink:#24202a;--muted:#706978;--line:#e8e2ec;--soft:#f8f5fa}
+  *{box-sizing:border-box}body{margin:0;background:#f3f0f5;color:var(--ink);font:14px/1.55 Inter,"Segoe UI",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{max-width:900px;margin:28px auto;padding:42px 48px;background:#fff;border:1px solid var(--line);box-shadow:0 12px 38px rgba(65,38,83,.09)}
+  .top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;border-bottom:3px solid var(--purple);padding-bottom:22px;margin-bottom:24px}
+  .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:800;color:var(--coral)}h1{font-size:30px;letter-spacing:-.04em;line-height:1.15;color:var(--purple);margin:7px 0 8px}.company{font-size:16px;font-weight:700}.meta{font-size:11px;color:var(--muted);text-align:right}
+  .banner{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--muted);font-size:11px;margin-bottom:22px}
+  .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 24px}.metric{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fff}.metric span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}.metric strong{display:block;font-size:19px;color:var(--purple);margin-top:5px;overflow-wrap:anywhere}
+  h2{font-size:15px;color:var(--purple);margin:26px 0 9px;padding-bottom:8px;border-bottom:1px solid var(--line)}table{width:100%;border-collapse:collapse}th,td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px;text-align:left}th{width:58%;font-weight:600;color:#5f5966;background:#fbf9fc}td{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  .footer{border-top:1px solid var(--line);margin-top:30px;padding-top:14px;color:var(--muted);font-size:10px}.print-actions{text-align:right;margin-bottom:18px}.print-actions button{border:0;border-radius:8px;background:var(--purple);color:#fff;padding:10px 14px;font-weight:700;cursor:pointer}
+  @media(max-width:650px){.page{margin:0;padding:24px 18px}.top{display:block}.meta{text-align:left;margin-top:12px}.metrics{grid-template-columns:1fr}.metric strong{font-size:17px}}
+  @page{size:A4;margin:14mm}@media print{body{background:#fff;font-size:11px}.page{max-width:none;margin:0;padding:0;border:0;box-shadow:none}.print-actions{display:none}.top{break-inside:avoid}.metric,table{break-inside:avoid}h2{break-after:avoid}}
+  </style></head><body><main class="page"><div class="print-actions"><button onclick="window.print()">Print / Save as PDF</button></div>
+  <header class="top"><div><div class="eyebrow">Investment Banking · Private Equity</div><h1>Valuation Report</h1><div class="company">${safe(c.name)}${c.ticker?` · ${safe(c.ticker)}`:""}</div></div><div class="meta"><strong>VALUATION STUDIO</strong><br>Reporting currency: ${safe(currency)}<br>Generated ${safe(new Date().toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}))}<br>Data source: ${safe(state.dataSource||"Illustrative")}</div></header>
+  <div class="banner"><strong>Important:</strong> Built-in company assumptions and transaction examples may be illustrative. Independently verify source financials, currency units, and valuation assumptions before relying on this report.</div>
+  <div class="metrics"><div class="metric"><span>Enterprise Value</span><strong>${safe(cur(state.dcf?.ev))}</strong></div><div class="metric"><span>Equity Value</span><strong>${safe(cur(state.dcf?.equity))}</strong></div><div class="metric"><span>Implied Share Price</span><strong>${safe(cur(state.dcf?.sharePrice))}</strong></div></div>
+  <h2>Discounted Cash Flow</h2><table><tbody>${rows(reportRows)}</tbody></table>
+  <h2>Comparable Companies</h2><table><tbody>${rows(compsRows)}</tbody></table>
+  <h2>Precedent Transactions</h2><table><tbody>${rows(precedentRows)}</tbody></table>
+  <h2>Mergers & Acquisitions</h2><table><tbody>${rows(maRows)}</tbody></table>
+  <div class="footer">Prepared with Valuation Studio for educational and analytical purposes. This report is not investment advice. Confirm all financial values, units, market data and assumptions independently.</div>
+  </main><script>window.addEventListener('load',()=>{setTimeout(()=>window.print(),350)});<\/script></body></html>`);
+  reportWindow.document.close();
 }
 
 /* ============================================================
@@ -3205,6 +3374,7 @@ function initialize(){
   loadModelToInputs();
 
   applyCompany(companies[0]);
+  syncSelectedCompanyToModel();
 
   calculateWACC();
   calculate();
@@ -3231,7 +3401,7 @@ initialize();
 
 (async function probeBackend(){
   try{
-    const response=await fetch("/api/health",{method:"GET"});
+    const response=await fetch(`${window.VALUATION_API_BASE||""}/api/health`,{method:"GET"});
 
     if(response.ok){
       const data=await response.json().catch(()=>({}));
